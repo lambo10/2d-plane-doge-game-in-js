@@ -1,0 +1,471 @@
+<html>
+<head>
+    <meta name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+      <title>SPACE MOVE</title>
+      <link rel="stylesheet" type="text/css" href="bootstrap.css">
+
+        <style type="text/css">
+        .nlAddcancel{
+            width: 9px;
+            height: 9px;
+        }
+        @media(max-width:700px){
+            .nlAddcancel{
+        width: 9px;
+            height: 9px;
+        }
+    }
+        @media(max-width:450px){
+            .nlAddcancel{
+        width: 9px;
+            height: 9px;
+        }
+}
+        </style>
+</head>
+<body onload="addHouseSpeed()">
+<div class="row"><div class="col-md-12"><div><canvas id="gameCanvas" style="background-image: url('1spin.png'); border: solid;"></canvas></div></div></div>
+
+<img id="scream" width="600" height="250"
+src="planeModel.gif" alt="The Scream" style="display: none; width: 100%; height: 100%;">
+
+<img id="scream2" width="600" height="250"
+src="house.png" alt="The Scream" style="display: none; width: 100%; height: 100%;">
+
+
+<img id="cloud1" width="600" height="250"
+src="cloud1.png" alt="The Scream" style="display: none; width: 100%; height: 100%;">
+
+
+<img id="spinCoin" width="50" height="50"
+src="spinCoinH.png" alt="The Scream" style="display: none; width: 100%; height: 100%;">
+
+<img id="loaderH" width="50" height="50"
+src="loader.gif" alt="The Scream" style="display: none;">
+
+<div id="SavedSpins" style="position:absolute;"><div>SPINS 5</div></div>
+
+
+<div id="popupAddH" style="position:absolute; width: 95%; height: 90%; background-color: #6666ff; display: none;"><div onclick="cancelPopUpAdd()" class="fa fa-cancel nlAddcancel" style="background-color: #ffffff; "><img src="ic_cancel.png" style="width: 9px; height: 9px;"></div></div>
+
+</body>
+<script>
+
+var myGameArea;
+var myGamePiece;
+var myBackground;
+var myObstacles = [];
+var mySpins = [];
+var mySpinsVisibility = [];
+var myscore;
+var spinScore;
+var spinScoreStoreV = 0;
+var houseSpeed = -1;
+var addHouseSpeedStop = 0;
+var myUpBtn;
+var myDownBtn;
+var myLeftBtn;
+var myRightBtn;
+
+var hitID =0;
+var popupAddCOUNTER=0;
+
+var planePresentLeft = 0;
+var planePresentRight = 0;
+var planePresentUp = 0;
+var planePresentDown = 0;
+
+
+function startGame() {
+
+      var wVSO = window.innerWidth
+|| document.documentElement.clientWidth
+|| document.body.clientWidth;
+
+var hVSO = window.innerHeight
+|| document.documentElement.clientHeight
+|| document.body.clientHeight;
+
+
+document.getElementById("popupAddH").style.top=((5*hVSO)/100);
+document.getElementById("popupAddH").style.left=((3*wVSO)/100);
+
+document.getElementById("SavedSpins").style.top=((5*hVSO)/100);
+document.getElementById("SavedSpins").style.right=((10*wVSO)/100);
+
+    myGameArea = new gamearea();
+    myGamePiece = new component(40, 30, "red", 75, 75, "image");
+    myscore = new component("15px", "Consolas", "black", 300, 25, "text");
+     spinScore = new component("15px", "Consolas", "CollectedSpins:0", 10, 25, "text");
+      
+    myGameArea.start();
+     myUpBtn = new component(wVSO, ((40*hVSO)/100), "blue", 0, 0,"buttonC"); 
+  myDownBtn = new component(wVSO, ((40*hVSO)/100), "blue", 0, (hVSO-((40*hVSO)/100)),"buttonC"); 
+  myLeftBtn = new component(((40*wVSO)/100), hVSO, "blue", 0, 0,"buttonC"); 
+  myRightBtn = new component(((40*wVSO)/100), hVSO, "blue", (wVSO-((40*wVSO)/100)), 0,"buttonC"); 
+}
+
+function gamearea() {
+    this.canvas = document.getElementById("gameCanvas");
+    var wVSO = window.innerWidth
+|| document.documentElement.clientWidth
+|| document.body.clientWidth;
+
+var hVSO = window.innerHeight
+|| document.documentElement.clientHeight
+|| document.body.clientHeight;
+
+    this.canvas.width = wVSO;
+    this.canvas.height = hVSO;    
+    this.context = this.canvas.getContext("2d");
+    this.pause = false;
+    this.frameNo = 0;
+
+    this.start = function() {
+        this.interval = setInterval(updateGameArea, 20);
+
+        window.addEventListener('mousedown', function (e) {
+            myGameArea.x = e.pageX;
+            myGameArea.y = e.pageY;
+        })
+        window.addEventListener('mouseup', function (e) {
+            myGameArea.x = false;
+            myGameArea.y = false;
+        })
+        window.addEventListener('touchstart', function (e) {
+            myGameArea.x = e.pageX;
+            myGameArea.y = e.pageY;
+        })
+        window.addEventListener('touchend', function (e) {
+            myGameArea.x = false;
+            myGameArea.y = false;
+        })
+    }
+
+    this.stop = function() {
+        clearInterval(this.interval);
+        this.pause = true;
+        
+      
+    }
+
+
+
+    this.clear = function(){
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+function reloadSSA(){
+    window.location = "space move.html";
+}
+function component(width, height, color, x, y, type) {
+
+    this.type = type;
+    if (type == "text") {
+        this.text = color;
+    }
+    this.score = 0;    this.width = width;
+    this.height = height;
+    this.speedX = 0;
+    this.speedY = 0;    
+    this.x = x;
+    this.y = y;    
+
+this.disappear = function() {
+    ctx = myGameArea.context;
+             ctx.globalAlpha=1;
+}
+
+
+
+
+
+
+
+
+
+
+
+    this.update = function() {
+
+        ctx = myGameArea.context;
+
+        if (this.type == "text") {
+            ctx.globalAlpha=1;
+            ctx.font = this.width + " " + this.height;
+            ctx.fillStyle = color;
+            ctx.fillText(this.text, this.x, this.y);
+        }else if (type == "image" || type == "background" || type == "imageHouse") {
+            var img = document.getElementById("scream");
+            ctx.globalAlpha=1;
+ ctx.drawImage(img, 
+        this.x, 
+        this.y,
+        this.width, this.height);
+        
+
+
+        if (type == "imageHouse") {
+             var img = document.getElementById("scream2");
+             ctx.globalAlpha=1;
+ ctx.drawImage(img, 
+        this.x, 
+        this.y,
+        this.width, this.height);
+        }
+if (type == "background") {
+ctx.globalAlpha=1;
+    ctx.drawImage(this.image, 
+                this.x + this.width, this.y, this.width, this.height);
+}
+        }else if (type == "cloud") {
+
+             var img2 = document.getElementById("cloud1");
+             ctx.globalAlpha=1;
+ ctx.drawImage(img2, 
+        this.x, 
+        this.y,
+        this.width, this.height);
+        }else if (type == "spinsH") {
+
+             var img2 = document.getElementById("spinCoin");
+             if (hitID <= 0) {
+ctx.globalAlpha=1;
+             }else{
+                ctx.globalAlpha=0;
+             }
+             
+ ctx.drawImage(img2, 
+        this.x, 
+        this.y,
+        this.width, this.height);
+        }else if (type == "buttonC") {
+
+            ctx.globalAlpha=0;
+            ctx.fillStyle = color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        }else if (type == "afterCoin") {
+
+             ctx.globalAlpha=0;
+ ctx.fillStyle = color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        }
+        else {
+ctx.globalAlpha=1;
+            ctx.fillStyle = color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+
+        this.clicked = function() {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var clicked = true;
+        if ((mybottom < myGameArea.y) || (mytop > myGameArea.y)
+         || (myright < myGameArea.x) || (myleft > myGameArea.x)) {
+            clicked = false;
+        }
+        return clicked;
+    }
+    }
+
+
+
+
+
+
+
+    this.newPos = function() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.type == "background") {
+            if (this.x == -(this.width)) {
+                this.x = 0;
+            }
+        } 
+    }
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+
+planePresentLeft = this.x;
+planePresentRight = this.x + (this.width);
+planePresentUp = this.y;
+planePresentDown = this.y + (this.height);
+
+        var crash = true;
+        if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+            crash = false;
+        }
+        return crash;
+    }
+
+}
+
+
+
+function collectSpins (otherobj) {
+        var myleft = planePresentLeft;
+        var myright = planePresentRight;
+        var mytop = planePresentUp;
+        var mybottom = planePresentDown;
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+        spinScoreStoreV = spinScoreStoreV + 0.00001;
+        if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+            crash = false;
+        }
+        return crash;
+    }
+
+function cancelPopUpAdd(){
+document.getElementById("popupAddH").style.display = "none";
+   startGame();
+   spinScoreStoreV = spinScoreStoreV - 0.00001;
+   spinScore.text="COLLECTEDSPINS: " + spinScoreStoreV; 
+    popupAddCOUNTER = 0;
+}
+
+function updateGameArea() {
+
+	houseSpeed = houseSpeed - 0.001;
+ popupAddCOUNTER =  popupAddCOUNTER +1;
+
+ if (popupAddCOUNTER >= 2000) {
+    document.getElementById("popupAddH").style.display = "block";
+    myGameArea.stop();
+   
+ }
+    var x, y, min, max, height, gap;
+    for (i = 0; i < myObstacles.length; i += 1) {
+        if (myGamePiece.crashWith(myObstacles[i])) {
+            addHouseSpeedStop = 10;
+            myGameArea.stop();
+           window.setTimeout(reloadSSA, 10);
+            return;
+        } 
+    }
+
+    for (i = 0; i < mySpins.length; i += 1) {
+        if (collectSpins(mySpins[i])) {
+            mySpinsVisibility[i] = 10;
+spinScore.text="COLLECTEDSPINS: " + spinScoreStoreV;       
+        }
+    }
+
+    if (myGameArea.pause == false) {
+        myGameArea.clear();
+        myGameArea.frameNo += 1;
+        myscore.score +=1;        
+        if (myGameArea.frameNo == 1 || everyinterval(150)) {
+            x = myGameArea.canvas.width;
+            y = myGameArea.canvas.height - 100;
+            min = 20;
+            max = 100;
+            height = Math.floor(Math.random()*(max-min+1)+min);
+            min = 50;
+            max = 100;
+            gap = Math.floor(Math.random()*(max-min+1)+min);
+            myObstacles.push(new component(30, height, "green", x, 0,"cloud"));
+            myObstacles.push(new component(20, x - height - gap, "green", x, height + gap,"imageHouse"));
+
+              var minSSO = 10;
+            var maxSSO = 150;
+            Ypoint = Math.floor(Math.random()*(maxSSO-minSSO+1)+min);
+mySpins.push(new component(30, 30, "green", (x-(Math.random()*100)),(y-(Math.random()*(500))),"spinsH"));
+mySpinsVisibility.push(0);
+        }
+
+
+
+        for (i = 0; i < myObstacles.length; i += 1) {
+            myObstacles[i].x += houseSpeed;
+            myObstacles[i].update();
+        }
+ for (i = 0; i < mySpins.length; i += 1) {
+       if (mySpinsVisibility[i] <=0) {
+        hitID = 0;
+       }else{
+        hitID = 10;
+       }
+ mySpins[i].x += houseSpeed;
+            mySpins[i].update();
+    
+        
+    }
+
+ if (myGameArea.x && myGameArea.y) {
+        if (myUpBtn.clicked()) {
+            myGamePiece.y -= 1;
+        }
+        if (myDownBtn.clicked()) {
+            myGamePiece.y += 1;
+        }
+        if (myLeftBtn.clicked()) {
+            myGamePiece.x += -1;
+        }
+        if (myRightBtn.clicked()) {
+            myGamePiece.x += 1;
+        }
+    }
+
+        myscore.text="SCORE: " + myscore.score; 
+
+        myscore.update();
+        spinScore.update();
+        myGamePiece.newPos(); 
+    myGamePiece.update(); 
+   
+    myUpBtn.update();
+    myDownBtn.update();
+    myRightBtn.update();
+    myLeftBtn.update();
+    
+    }
+
+    
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+
+function moveup(e) {
+    myGamePiece.speedY = -1; 
+}
+
+function movedown() {
+    myGamePiece.speedY = 1; 
+}
+
+function moveleft() {
+    myGamePiece.speedX = -1; 
+}
+
+function moveright() {
+    myGamePiece.speedX = 1; 
+}
+
+function clearmove(e) {
+    myGamePiece.speedX = 0; 
+    myGamePiece.speedY = 0; 
+}
+startGame();
+
+</script>
+</html>
